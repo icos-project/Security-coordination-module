@@ -1,0 +1,27 @@
+*
+
+!**/
+
+# allowed files
+!README.md
+!.gitignore
+!docs/**
+
+# Python
+!requirements.txt
+!*.py
+!*.ini
+!logging.conf
+
+# yaml
+!*.yaml
+
+# startup
+!serve.sh
+
+# docker
+!Dockerfile
+!.dockerignore
+
+# gitlab
+!.gitlab-ci.yml

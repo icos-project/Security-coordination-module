@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  description: |
+    This is the ICOS Security Layer Coordination Module Outbound (Proxy) API based on the OpenAPI 3.0.3 specification.
+
+    <b>TODO:</b> everyone to add their needed outbound calls/APIs.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: ICOS Security Layer Coordination Module
+  x-logo:
+    url: "https://i.ibb.co/vsHR6f5/icos-logo.png"
+  version: 0.0.1
+servers:
+  - url: http://localhost:8080/api/out/v3
+tags:
+  - description: Coordination module
+    name: coordination
+  - description: Anomaly Detection module operations
+    name: anomaly
+  - description: Security Vulnerability Mitigation module operations
+    name: mitigation
+  - description: Identity Manager & Access Control module operations
+    name: iam
+  - description: Audit module operations
+    name: audit
+  - description: Compliance Enforcement module operations
+    name: compliance
+  - description: Security Scan module operations
+    name: scan
+# TODO: everyone to add their needed outbound calls/APIs
+
+paths:
+  # General
+  /healthcheck:
+    get:
+      description: Returns Proxy API healthcheck
+      responses:
+        "200":
+          description: OK
+  # Audit
+  /audit/anomaly_detection:
+    get:
+      description: Gets anomaly detection results
+      responses:
+        "200":
+          description: OK
+      tags:
+        - audit
+  /audit/security_scan:
+    get:
+      description: Gets security scan results
+      responses:
+        "200":
+          description: Returns security scan results
+      tags:
+        - audit
+  /audit/compliance_enforcement:
+    get:
+      description: Gets compliance enforcement results
+      responses:
+        "200":
+          description: Returns compliance enforcement results
+      tags:
+        - audit
+  /audit/vulnerability_mitigation:
+    get:
+      description: Gets security vulnerability mitigation results
+      responses:
+        "200":
+          description: Returns security vulnerability mitigation results
+      tags:
+        - audit

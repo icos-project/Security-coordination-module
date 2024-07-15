@@ -1,0 +1,7 @@
+variables:
+  PH_CUSTOM_DOCKER_BUILD_CONTEXT_FOLDER: reverse_proxy_api
+
+include:
+  - project: 'resengit/gitlab/pipeline-helpers'
+    ref: main
+    file: '/pipelines/docker-image.yaml'
