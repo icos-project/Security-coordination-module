@@ -23,18 +23,16 @@ from typing import Any, Union, assert_never
 import requests
 from requests.auth import HTTPBasicAuth
 from src.models import Result
-from src.config import config
+from src.config import WAZUH_CONFIG  # Import the WAZUH_CONFIG instance
 from src.models.request_models import Method, ResponseError
 
-
-wazuh_username = config.WAZUH_CONFIG.wazuh_username()
-wazuh_password = config.WAZUH_CONFIG.wazuh_password()
-
+# Set up authentication and base URL dynamically from WAZUH_CONFIG
+wazuh_username = WAZUH_CONFIG.wazuh_username()
+wazuh_password = WAZUH_CONFIG.wazuh_password()
 basic_auth = HTTPBasicAuth(wazuh_username, wazuh_password)
 
-wazuh_host = config.WAZUH_CONFIG.wazuh_host()
-wazuh_port = config.WAZUH_CONFIG.wazuh_port()
-
+wazuh_host = WAZUH_CONFIG.wazuh_host()
+wazuh_port = WAZUH_CONFIG.wazuh_port()
 wazuh_base_url = f"https://{wazuh_host}:{wazuh_port}/"
 
 logger = logging.getLogger(__name__)
@@ -72,6 +70,10 @@ class WazuhClient:
     ) -> requests.Response:
 
         if self.jwt_token is None:
+            print("username:")
+            print(wazuh_username)
+            print("password:")
+            print(wazuh_password)
             self._request_jwt_token()
 
         result = self._make_request(method, request_url, body, query_params)
@@ -86,6 +88,8 @@ class WazuhClient:
 
         if response.status_code > 200:
             logger.error("Error getting response from Wazuh")
+            logger.error(request_url)
+            logger.error(method)
             logger.error(response)
             r = response.json()
 

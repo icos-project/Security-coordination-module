@@ -18,6 +18,10 @@ python -m uvicorn src.app:APP --reload
 
 The application will be served on `localhost:8000` by default.
 
+[Keycloak Permission Validation](keycloak-validation)
+
+[Wazuh](wazuh)
+
 ## Security
 
 All calls to the Security coordination module require a valid Authorization token

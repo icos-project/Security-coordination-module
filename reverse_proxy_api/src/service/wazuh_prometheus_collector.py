@@ -18,6 +18,7 @@
 
 
 from collections import defaultdict
+import datetime
 from typing import Dict, Iterable
 import logging
 
@@ -37,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 def _create_vulnerability_metric():
+    logger.error("_create_vulnerability_metric")
     c = GaugeMetricFamily(
         "vulnerabilities",
         "Agregated information about the vulnerabilities",
@@ -48,12 +50,12 @@ def _create_vulnerability_metric():
             "severity",
         ],
     )
-
+    logger.error("Getting agents")
     agent_r = get_agent_ids()
 
     if agent_r.has_error():
         return Result(None, agent_r.err)
-
+    logger.error("No errors while getting agents")
     agents = agent_r.unwrap()
 
     r = get_active_vulnerabilities_for_agents(agents)
@@ -79,6 +81,7 @@ def _create_vulnerability_metric():
             c.add_metric(
                 [agent.name, agent.ip, agent.uname, agent.hostname, level], count
             )
+    logger.error("Returning vul metrics")
     return c
 
 
@@ -102,6 +105,21 @@ def _create_sca_metric():
         c.add_metric([agent.name, agent.ip, agent.uname, agent.hostname], sca_score)
 
     return c
+
+
+def _create_sca_score():
+    current_time = datetime.datetime.now().minute
+    score = 80
+    if current_time%2==0:
+        score = 20
+    response = dict(ScaScore=score)
+    
+    return response
+
+
+def basic_score():
+    return _create_sca_score()
+
 
 
 class WazuhCollector(Collector):

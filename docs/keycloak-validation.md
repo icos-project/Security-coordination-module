@@ -51,8 +51,3 @@ curl --location 'http://localhost:8080/realms/icos/protocol/openid-connect/token
 ```bash
 curl --header 'Authorization: Bearer <bearer-token>' http://127.0.0.1:8000/wazuh
 ```
-# Legal
-The Coorination module is released under the Apache License 2.0.
-Copyright © 2022-2024 ICOS Consortium. All rights reserved.
-
-🇪🇺 This work has received funding from the European Union's HORIZON research and innovation programme under grant agreement No. 101070177.

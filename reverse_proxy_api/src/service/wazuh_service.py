@@ -19,11 +19,13 @@
 
 from dataclasses import dataclass
 from typing import List
+import logging
 
 from src.models.request_models import Method, ResponseError
 from src.wazuh import client_singleton
 from src.models import Result
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class Agent:
@@ -43,6 +45,12 @@ class AgentVulnerability:
     agent_hostname: str
     severity: str
 
+manually_defined_scores = dict()
+def get_manually_defined_scores():
+    return manually_defined_scores
+def set_manually_defined_scores(new_scores):
+    global manually_defined_scores
+    manually_defined_scores = new_scores
 
 def get_hostname_from_uname(uname: str):
     hostname = uname.split("|")[1]
@@ -68,13 +76,13 @@ def get_agent_ids() -> Result[List[Agent], ResponseError]:
 
 
 def get_active_agent_vulnerabilities(agent: Agent) -> Result[List[AgentVulnerability], ResponseError]:
-    request_url = f"/vulnerability/{agent.id}"
+    request_url = f"/sca/{agent.id}"
     qp = {"status": "valid"}
 
-    r = client_singleton.request(Method.GET, request_url, query_params=qp)
+    r = client_singleton.request(Method.GET, request_url)
 
     vuln_map_fn = lambda x: AgentVulnerability(
-        agent.id, agent.name, agent.ip, agent.uname, agent.hostname, x["severity"]
+        agent.id, agent.name, agent.ip, agent.uname, agent.hostname, x["description"]
     )
     return r.map_item(lambda x: x["data"]["affected_items"]).map_item(lambda vulnerabilities: list(map(vuln_map_fn, vulnerabilities)))
 
@@ -96,7 +104,19 @@ def get_active_vulnerabilities_for_agents(agents: List[Agent]) -> Result[List[Ag
 
 
 def get_sca_score_for_agent(agent: Agent):
+    logger.error("Agent:")
+    logger.error(agent)
+    global manually_defined_scores
+    manual_score = 0
+    if "agents" in manually_defined_scores:
+        for manual_agent in manually_defined_scores["agents"]:
+            if manual_agent["agent_id"] == agent.id and manual_agent.get("affected_items"):
+                logger.error(manual_agent)
+                manual_score = manual_agent["affected_items"][0]["score"]
+    
     request_url = f"/sca/{agent.id}"
 
     r = client_singleton.request(Method.GET, request_url)
-    return r.map_item(lambda x: x["data"]["affected_items"][0]["score"])
+    if manual_score != 0:
+        return r.map_item(lambda x: manual_score)
+    return r.map_item(lambda x: x.get("data", {}).get("affected_items", [{}])[0].get("score") if x.get("data", {}).get("affected_items") else 0)

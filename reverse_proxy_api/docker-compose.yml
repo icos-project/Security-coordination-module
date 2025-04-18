@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      KEYCLOAK_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_CLIENT_ID: coordination
+      KEYCLOAK_REALM_NAME: icos
+      KEYCLOAK_CLIENT_SECRET_KEY: Km4OI7UNO1i4iOwQfUBAJ6rW4INSEyFD
+      KEYCLOAK_RESOURCE_SERVER_ID: Default Resource
+      KEYCLOAK_AUDIENCE: Default Resource
+      WAZUH_USERNAME: wazuh-wui
+      WAZUH_PASSWORD: MyS3cr37P450r.*-
+      WAZUH_HOST: 10.160.3.20
+      WAZUH_PORT: 30848
+      PROMETHEUS_METRICS_DISABLED: True
+      SECURITY_DISABLED: True
+    ports:
+      - "8000:8000"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.7
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    command: ["start-dev"]

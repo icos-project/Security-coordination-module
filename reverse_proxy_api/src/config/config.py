@@ -17,40 +17,53 @@
 #  and innovation programme under grant agreement No. 101070177.
 
 
-from dynaconf import Dynaconf
-
-settings = Dynaconf(
-    envvar_prefix="CONF",
-    settings_files=["settings.yaml"],
-    merge_enabled=True
-)
-
+import os
 
 class WazuhConfig:
     def wazuh_host(self) -> str:
-        return settings.wazuh.host
+        return os.getenv("WAZUH_HOST")
 
     def wazuh_port(self) -> str:
-        return settings.wazuh.port
+        return os.getenv("WAZUH_PORT")
 
     def wazuh_username(self) -> str:
-        return settings.wazuh.auth.username
+        return os.getenv("WAZUH_USERNAME")
 
     def wazuh_password(self) -> str:
-        return settings.wazuh.auth.password
+        return os.getenv("WAZUH_PASSWORD")
 
 
 WAZUH_CONFIG = WazuhConfig()
 
 class AppConfig:
-    def keycloak_rsa_public_key(self) -> str:
-        return settings.keycloak.public_key
 
     def prometheus_metrics_disabled(self) -> bool:
-        return settings.prometheus.metric_security_disabled
+        return os.getenv("PROMETHEUS_METRICS_DISABLED")
 
     def security_disabled(self) -> bool:
-        return settings.security.disabled
+        return os.getenv("SECURITY_DISABLED")
 
 
 APP_CONFIG = AppConfig()
+
+class KeycloakConfig:
+
+    def server_url(self) -> str:
+        return os.getenv("KEYCLOAK_SERVER_URL")
+
+    def realm_name(self) -> str:
+        return os.getenv("KEYCLOAK_REALM_NAME")
+
+    def resource_server_id(self) -> str:
+        return os.getenv("KEYCLOAK_RESOURCE_SERVER_ID")
+
+    def audience(self) -> str:
+        return os.getenv("KEYCLOAK_AUDIENCE")
+
+    def client_id(self) -> str:
+        return os.getenv("KEYCLOAK_CLIENT_ID")
+
+    def client_secret_key(self) -> str:
+        return os.getenv("KEYCLOAK_CLIENT_SECRET_KEY")
+
+KEYCLOAK_CONFIG = KeycloakConfig()

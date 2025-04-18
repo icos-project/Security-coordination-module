@@ -16,16 +16,23 @@
 #  This work has received funding from the European Union's HORIZON research
 #  and innovation programme under grant agreement No. 101070177.
 
+import logging
 
-from typing import Union
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-import base64
-import binascii
-import logging
-import jwt
-from src.config import APP_CONFIG
+import keycloak
+from keycloak import KeycloakOpenID
+
+from src.config import KEYCLOAK_CONFIG, APP_CONFIG
+
+keycloak_open_id = KeycloakOpenID(
+    KEYCLOAK_CONFIG.server_url(),
+    KEYCLOAK_CONFIG.realm_name(),
+    KEYCLOAK_CONFIG.client_id(),
+    KEYCLOAK_CONFIG.client_secret_key(),
+)
+#KEYCLOAK_PUBLIC_KEY = keycloak_open_id.public_key()
 
 
 async def validate_keycloak(request: Request, call_next):
@@ -40,7 +47,7 @@ async def validate_keycloak(request: Request, call_next):
     if token_header is None:
         err = 'No authorization header.'
         error = {'message': err}
-        logging.warn(err)
+        logging.warning(err)
 
         return JSONResponse(error, status_code=401)
 
@@ -49,17 +56,19 @@ async def validate_keycloak(request: Request, call_next):
     if len(split) < 2:
         err = 'Error with the token.'
         error = {'message': err}
-        logging.warn(err)
+        logging.warning(err)
 
         return JSONResponse(error, status_code=401)
 
     token = split[1].strip()
-    decoded = decode_token(token)
+    permissions = get_token_permissions(token)
 
-    if decoded is None:
-        error = {'message': 'Internal server error.'}
-        logging.error('Error parsing the token.')
-        return JSONResponse(error, status_code=500)
+    # Validate permissions
+    if not validate_permissions(permissions):
+        err = 'Insufficient permissions.'
+        error = {'message': err}
+        logging.warning(err)
+        return JSONResponse(error, status_code=403)
 
     response = await call_next(request)
     return response
@@ -79,30 +88,26 @@ def should_perform_keycloak_validation(request_url: str):
     return True
 
 
-def decode_token(token: str):
-    public_key = APP_CONFIG.keycloak_rsa_public_key()
+def get_token_permissions(token: str):
+    return keycloak_open_id.uma_permissions(token)
 
-    if public_key is None:
-        logging.error('No keycloak public key configured.')
-        return None
+def validate_permissions(permissions):
+    for permission in permissions:
+        scopes = permission.get('scopes')
+        auth_status = keycloak.uma_permissions.AuthStatus(
+            is_logged_in=True,  # Assuming the user is logged in
+            is_authorized=True if permission.get('scopes') else False,  # Check if scopes exist
+            missing_permissions=set()  # No missing permissions for now
+        )
 
-    public_key = '-----BEGIN PUBLIC KEY-----\n' + public_key + '\n-----END PUBLIC KEY-----'
+        if auth_status.is_logged_in and auth_status.is_authorized:
+            logging.info("User is authorized in scope(s): %s", scopes)
+            return True
 
-    try:
-        #TODO is the audience here correct? 
-        decoded = jwt.decode(token, public_key, audience='account', algorithms=["RS256"])
-        return decoded
-    except Exception as e:
-        logging.warn(f'Error decoding token')
-        logging.warn(e)
-        return None
+    logging.warning("User is not authorized.")
+    return False
 
-
-def decode_keycloak_rsa_public_key(encoded_key: str) -> Union[bytes, None]:
-
-    try: 
-        decoded = base64.b64decode(encoded_key)
-        return decoded
-    except binascii.Error:
-        logging.error('Cannot parse keycloak public key.')
-        return None
+print(KEYCLOAK_CONFIG.server_url())
+print(KEYCLOAK_CONFIG.realm_name())
+print(KEYCLOAK_CONFIG.client_id())
+print(KEYCLOAK_CONFIG.client_secret_key())

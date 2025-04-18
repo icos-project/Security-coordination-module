@@ -18,11 +18,18 @@
 
 from typing import cast
 from fastapi import APIRouter, Request, Response
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, JSONResponse
 from prometheus_client import generate_latest
-from src.service.wazuh_prometheus_collector import wazuh_registry
+from src.service.wazuh_prometheus_collector import wazuh_registry, basic_score
 from src.wazuh import client_singleton
 from src.models.request_models import Method, ResponseError
+from pydantic import BaseModel
+from src.service.wazuh_service import get_manually_defined_scores, set_manually_defined_scores
+
+class Item(BaseModel):
+    agent_id: str
+    score: int
+    node_name: str
 
 router = APIRouter(prefix="/wazuh")
 
@@ -77,9 +84,31 @@ def wazuh_delete(request: Request, response: Response, rest_of_path: str):
         
     return r.item
 
+def get_agent_scores():
+    scores = get_manually_defined_scores()
+    if not scores:
+        scores["agents"] = list()
+        r = client_singleton.request(Method.GET, "/agents")
+        for agent in r.item["data"]["affected_items"]:
+            rspns = client_singleton.request(Method.GET, f"/sca/{agent['id']}")
+            rspns.item["data"]["agent_id"] = agent["id"]
+            rspns.item["data"]["node_name"] = agent["node_name"]
+            scores["agents"].append(rspns.item["data"])
+
 prometheus_router = APIRouter(prefix="/wazuh-prometheus")
-
-
 @prometheus_router.get("/metrics", response_class=PlainTextResponse)
-def get_all_metrics():
+def get_all_metrics(request: Request, response: Response):
     return generate_latest(wazuh_registry)
+
+def manually_change_sca(item: Item):
+    agent_score_dict = get_manually_defined_scores()
+    for agent in agent_score_dict["agents"]:
+        if item.agent_id == agent["agent_id"]:
+            agent["affected_items"][0]["score"] = item.score
+
+router_sca = APIRouter(prefix="/sca")
+@router_sca.post("/chage")
+async def create_item(item: Item):
+    get_agent_scores()
+    manually_change_sca(item)
+    return get_manually_defined_scores()

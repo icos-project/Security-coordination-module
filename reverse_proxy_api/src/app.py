@@ -38,6 +38,7 @@ APP = FastAPI()
 APP.include_router(scan.router)
 APP.include_router(scan.prometheus_router)
 APP.include_router(health.router)
+APP.include_router(scan.router_sca)
 
 APP.middleware("http")(validate_keycloak)
 
